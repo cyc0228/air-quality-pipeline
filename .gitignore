@@ -1,0 +1,19 @@
+# 環境變數 (含 API Key、資料庫密碼,絕對不能上傳)
+.env
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+
+# 編輯器
+.vscode/
+.idea/
+
+# 系統檔案
+.DS_Store
+
+# Docker / 資料庫資料(不進版控)
+mysql_data/
