@@ -1,0 +1,75 @@
+version: "3.9"
+
+# 這份設定,採用 Airflow 官方建議的最簡易配置(LocalExecutor)
+# 適合單機開發、學習用途,不是給正式大規模生產環境用的架構(那種通常會用 CeleryExecutor + Redis)
+
+x-airflow-common: &airflow-common
+  image: apache/airflow:2.9.3
+  environment:
+    AIRFLOW__CORE__EXECUTOR: LocalExecutor
+    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@airflow-postgres/airflow
+    AIRFLOW__CORE__LOAD_EXAMPLES: "false"   # 不要載入官方內建的範例DAG,保持畫面乾淨
+    AIRFLOW__CORE__DAGS_FOLDER: /opt/airflow/dags
+    # 官方提供的簡易安裝機制,容器啟動時自動裝好這些套件,只適合本機開發用,不建議用在正式環境
+    _PIP_ADDITIONAL_REQUIREMENTS: "requests==2.31.0 mysql-connector-python==8.3.0 python-dotenv==1.0.1"
+  volumes:
+    - ./dags:/opt/airflow/dags
+    - ./:/opt/airflow/project   # 把整個專案資料夾掛進來,讓Airflow容器讀得到fetch_aqi.py等檔案跟.env
+  depends_on:
+    airflow-postgres:
+      condition: service_healthy
+
+services:
+  # Airflow 自己專用的資料庫,用來記錄任務執行紀錄、成功/失敗狀態
+  # 這跟你的 air_quality 資料庫是完全獨立、互不相干的兩個資料庫
+  airflow-postgres:
+    image: postgres:15
+    container_name: airflow_postgres
+    environment:
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_DB: airflow
+    volumes:
+      - airflow_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "airflow"]
+      interval: 5s
+      retries: 5
+
+  # 初始化用的服務:第一次啟動時,建立資料庫結構、建立管理員帳號,跑完就結束
+  airflow-init:
+    <<: *airflow-common
+    container_name: airflow_init
+    entrypoint: /bin/bash
+    command:
+      - -c
+      - |
+        airflow db migrate
+        airflow users create \
+          --username admin \
+          --password admin \
+          --firstname Admin \
+          --lastname User \
+          --role Admin \
+          --email admin@example.com
+
+  # 網頁介面,讓你可以用瀏覽器看DAG執行狀態
+  airflow-webserver:
+    <<: *airflow-common
+    container_name: airflow_webserver
+    command: webserver
+    ports:
+      - "8080:8080"
+    depends_on:
+      - airflow-init
+
+  # 排程器,真正負責「檢查時間到了沒、觸發任務執行」的核心
+  airflow-scheduler:
+    <<: *airflow-common
+    container_name: airflow_scheduler
+    command: scheduler
+    depends_on:
+      - airflow-init
+
+volumes:
+  airflow_postgres_data:

@@ -1,0 +1,27 @@
+name: 檢查程式碼
+
+# 觸發時機:每次推送程式碼到GitHub、或發出Pull Request時,自動執行
+on:
+  push:
+  pull_request:
+
+jobs:
+  syntax-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 取得程式碼
+        uses: actions/checkout@v4
+
+      - name: 設定Python環境
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: 安裝套件
+        run: pip install -r requirements.txt
+
+      - name: 檢查語法(V1.0 + V2.0 程式碼)
+        run: |
+          python -m py_compile fetch_aqi.py
+          python -m py_compile fetch_rainfall.py
+          python -m py_compile build_station_mapping.py

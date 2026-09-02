@@ -67,6 +67,8 @@ def clean_record(raw: dict) -> dict:
         "site_id": raw.get("siteid"),
         "site_name": raw.get("sitename"),
         "county": raw.get("county"),
+        "latitude": to_float(raw.get("latitude")),
+        "longitude": to_float(raw.get("longitude")),
         "publish_time": raw.get("publishtime"),
         "aqi": to_int(raw.get("aqi")),
         "status": raw.get("status"),
@@ -97,11 +99,14 @@ def get_db_connection():
 def upsert_station(cursor, record: dict):
     cursor.execute(
         """
-        INSERT INTO stations (site_id, site_name, county)
-        VALUES (%s, %s, %s)
-        ON DUPLICATE KEY UPDATE site_name = VALUES(site_name), county = VALUES(county)
+        INSERT INTO stations (site_id, site_name, county, latitude, longitude)
+        VALUES (%s, %s, %s, %s, %s)
+        ON DUPLICATE KEY UPDATE
+            site_name = VALUES(site_name), county = VALUES(county),
+            latitude = VALUES(latitude), longitude = VALUES(longitude)
         """,
-        (record["site_id"], record["site_name"], record["county"]),
+        (record["site_id"], record["site_name"], record["county"],
+         record["latitude"], record["longitude"]),
     )
 
 
