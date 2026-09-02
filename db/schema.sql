@@ -69,3 +69,13 @@ CREATE TABLE IF NOT EXISTS station_mapping (
     CONSTRAINT fk_mapping_aqi FOREIGN KEY (aqi_site_id) REFERENCES stations(site_id),
     CONSTRAINT fk_mapping_rain FOREIGN KEY (rain_site_id) REFERENCES rain_stations(site_id)
 ) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS data_quality_issues (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    data_source VARCHAR(20) NOT NULL,       -- 'aqi' 或 'rainfall'
+    site_id VARCHAR(20),                     -- 出問題的測站 ID
+    field_name VARCHAR(20) NOT NULL,         -- 出問題的欄位,例如 'aqi'、'precipitation'
+    issue_type VARCHAR(30) NOT NULL,         -- 異常類型,例如 'negative_value'、'exceeds_max'、'not_integer'
+    raw_value VARCHAR(50),                   -- 原始異常數值(存成字串,避免異常值本身無法存進數值欄位)
+    detected_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
