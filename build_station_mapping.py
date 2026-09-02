@@ -63,12 +63,12 @@ def fetch_stations(cursor, table_name: str) -> list[dict]:
 def find_nearest_rain_station(aqi_station: dict, rain_stations: list[dict]) -> dict | None:
     """找出離這個空氣品質測站最近的雨量測站,超過門檻距離則回傳 None。"""
 
+    if aqi_station["latitude"] is None or aqi_station["longitude"] is None:
+        return None
+
     # 型別防呆:資料庫讀出來的 DECIMAL 可能是 Decimal 型別,先統一轉成 float 再計算
     aqi_lat = float(aqi_station["latitude"])
     aqi_lon = float(aqi_station["longitude"])
-
-    if aqi_lat is None or aqi_lon is None:
-        return None
 
     nearest = None
     min_distance = float("inf")

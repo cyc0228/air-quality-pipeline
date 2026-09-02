@@ -25,3 +25,6 @@ jobs:
           python -m py_compile fetch_aqi.py
           python -m py_compile fetch_rainfall.py
           python -m py_compile build_station_mapping.py
+
+      - name: 執行單元測試(V3.0)
+        run: pytest tests/
