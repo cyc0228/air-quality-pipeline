@@ -15,6 +15,9 @@ x-airflow-common: &airflow-common
   volumes:
     - ./dags:/opt/airflow/dags
     - ./:/opt/airflow/project   # 把整個專案資料夾掛進來,讓Airflow容器讀得到fetch_aqi.py等檔案跟.env
+  extra_hosts:
+    # Linux上的Docker(例如EC2),預設不像Docker Desktop那樣自動支援host.docker.internal,需要手動加這行
+    - "host.docker.internal:host-gateway"
   depends_on:
     airflow-postgres:
       condition: service_healthy

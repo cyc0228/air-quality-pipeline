@@ -1,0 +1,19 @@
+version: "3.9"
+
+# FastAPI 查詢層專用的服務設定,獨立於 MySQL(docker-compose.yml)
+# 與 Airflow(docker-compose.airflow.yml)一樣,各自用獨立的 compose 檔案管理
+
+services:
+  api:
+    build: .
+    container_name: air_quality_api
+    ports:
+      - "8001:8000"
+    env_file:
+      - .env
+    environment:
+      # 容器內部連回本機/EC2主機上的MySQL,跟Airflow DAG裡的做法一致
+      MYSQL_HOST: host.docker.internal
+    extra_hosts:
+      # Linux上的Docker,預設不像Docker Desktop那樣自動支援host.docker.internal,需要手動加這行
+      - "host.docker.internal:host-gateway"
