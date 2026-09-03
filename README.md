@@ -99,17 +99,29 @@ pytest tests/
 ## 工程筆記
 
 **V1.0/V2.0 遺留**
+
 1. **SSL 憑證驗證失敗**:`.gov.tw` 網域的憑證鏈缺少 Subject Key Identifier,新版 Python 的憑證驗證較嚴格導致連線失敗。本機環境改用系統信任的憑證庫(`pip-system-certs`)後解決。
+
 2. **API 回傳格式不一致**:空氣品質 API 有時直接回傳陣列,有時包在 `{"records": [...]}` 裡;雨量 API 則是多層巢狀結構,且經緯度同時提供 TWD67 與 WGS84 兩種座標系統,需篩選出 WGS84。
+
 3. **Docker volume 掛載檔案變成資料夾**:掛載 `schema.sql` 時,若本機路徑當下不存在該檔案,Docker 會自動建立同名資料夾取代,導致初始化腳本從未被執行。
+
 4. **中文字元寫入後變成問號**:資料庫伺服器、連線、資料表三個層級的字元集需全部對齊 `utf8mb4`。
+
 5. **`ON DUPLICATE KEY UPDATE` 未涵蓋時間戳記欄位**:`DEFAULT CURRENT_TIMESTAMP` 只在首次寫入生效,需在更新語句中明確加入該欄位。
+
 6. **Airflow 容器內無法連線本機 MySQL**:改用 `host.docker.internal`,執行指令時覆蓋 `MYSQL_HOST` 環境變數。
+
 7. **Airflow 容器缺少第三方套件**:採用 `_PIP_ADDITIONAL_REQUIREMENTS` 環境變數於容器啟動時自動安裝(官方文件註明僅適合開發環境)。
 
 **V3.0 新增**
+
 8. **測試撰寫時發現的實際 bug**:`find_nearest_rain_station()` 原先寫法在座標為 `None` 時,先執行 `float(None)` 直接拋出例外,而非設計預期的優雅回傳 `None`。撰寫邊界情況測試時發現此問題,修正判斷順序後解決。
+
 9. **不合理數值 vs. 統計離群值的界線**:資料品質監控設計初期曾考慮以資料庫現有數值的分布範圍設定異常門檻,但該做法會將真實但少見的極端天氣(如颱風高雨量)誤判為異常。改為依據指標**定義本身**(數值範圍、型別)設定門檻,而非依賴現有樣本統計。
+
 10. **PowerShell 不支援 `<` 重新導向語法**:將整份 `schema.sql` 灌入容器時,`docker exec -i ... < db/schema.sql` 在 PowerShell 報錯(`RedirectionNotSupported`)。改用 `Get-Content db/schema.sql | docker exec -i ...` 的原生 PowerShell 語法後解決。
+
 11. **雲端部署的資源限制與架構取捨**:嘗試將 MySQL、Airflow、FastAPI 完整部署至 AWS EC2 時,`t3.micro`(1GB 記憶體)的硬碟空間先不足以下載 Airflow 映像檔;更換至儲存空間充足的執行個體後,記憶體仍不足以同時穩定運行 MySQL 與完整 Airflow(webserver + scheduler + 獨立 PostgreSQL),`airflow_scheduler` 反覆被系統終止。升級至 `t3.small`(2GB)並調整 webserver worker 數量後,記憶體壓力仍逼近上限。評估後判斷:若僅將排程留在本機、資料庫與 API 部署雲端,會產生「雲端服務資料新鮮度依賴本機是否開機」的架構矛盾。因此決定將完整系統保留於本機 Docker 環境運行;雲端所需的容器化配置(`Dockerfile`、`docker-compose.api.yml`)已完成並驗證可行(MySQL 與 FastAPI 曾成功部署於雲端並正確查詢資料)。
+
 12. **雲端環境的 SSL 憑證驗證問題與本機不同**:EC2 主機的 Python 版本較新,連線環境部 API 時出現與本機不同的 SSL 驗證錯誤(`Missing Subject Key Identifier`),推測為新版 OpenSSL 對 TWCA 憑證鏈的驗證邏輯更嚴格所致;因僅為驗證雲端連線可行性的暫時性測試,故於該次測試中以 `verify=False` 繞過,並非本機/正式版本採用的解法。
