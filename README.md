@@ -98,7 +98,7 @@ pytest tests/
 
 ## 工程筆記
 
-**V1.0/V2.0 遺留**
+**V1.0/V2.0**
 
 1. **SSL 憑證驗證失敗**:`.gov.tw` 網域的憑證鏈缺少 Subject Key Identifier,新版 Python 的憑證驗證較嚴格導致連線失敗。本機環境改用系統信任的憑證庫(`pip-system-certs`)後解決。
 
